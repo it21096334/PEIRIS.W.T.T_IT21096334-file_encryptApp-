@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Files</title>
+
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css"
+          integrity="sha384-rbsA2VBKQhggwzxH7pPCaAqO46MgnOM80zW1RWuH61DGLwZJEdK2Kadq2F9CUG65" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.min.js"
+            integrity="sha384-cuYeSxntonz0PPNlHhBs68uyIAVpIIOZZ5JqeqvYYIcEL727kskC66kF92t6Xl2V"
+            crossorigin="anonymous"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.3.0/css/all.min.css"
+          integrity="sha512-SzlrxWUlpfuzQ+pcUCosxcglQRNAq/DZjVsC0lE40xsADsfeQoEypE+enwcOiGjk/bSuGGKHEyjSoQ1zVisanQ=="
+          crossorigin="anonymous" referrerpolicy="no-referrer"/>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js" integrity="sha512-E8QSvWZ0eCLGk4km3hxSsNmGWbLtSCSUcewDQPQWZF6pEU8GlT8a5fF32wOl1i8ftdMhssTrF/OhyGWwonTcXA==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+
+</head>
+<body>
+
+<div class="container container-fluid mt-3">
+
+    <div class="row">
+        <div class="col">
+            <button onclick="logout()" class="btn btn-outline-danger float-end"><i class="fa fa-power-off"></i></button>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-2 col-sm-12"></div>
+        <div class="col-lg-8 col-sm-12">
+
+            <div class="mb-3">
+                <label class="form-label" for="file">Upload a file</label>
+                <input type="file" class="form-control" id="file">
+            </div>
+            <div class="mb-3">
+                <label class="form-label" for="file">Password</label>
+                <input type="text" class="form-control" id="password">
+            </div>
+
+            <button onclick="upload()" class="btn btn-outline-dark float-end"><i class="fa fa-upload"></i></button>
+
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-lg-2 col-sm-12"></div>
+        <div class="col-lg-8 col-sm-12">
+            <table class="table table-hover">
+                <thead>
+                <tr>
+                    <td>File name</td>
+                    <td>File type</td>
+                    <td>File size</td>
+                </tr>
+                </thead>
+                <tbody id="file-container">
+                </tbody>
+            </table>
+        </div>
+
+    </div>
+
+
+</div>
+
+
+
+</body>
+
+<script>
+    let user_id = localStorage.getItem("uid");
+    if (user_id == null || user_id === "null"){
+        window.location.href = "sign_in.html";
+    }
+
+    function logout() {
+        localStorage.setItem("uid", null);
+        window.location.reload();
+    }
+    async function upload(){
+
+        const file = document.getElementById("file").files[0];
+        let password = document.getElementById("password").value;
+
+        if (password.length < 3){
+            alert("Invalid password!");
+            return;
+        }
+
+        if (file === undefined){
+            alert("Please select a file!");
+            return;
+        }
+
+        const reader = new FileReader();
+        reader.onload = async (e) => {
+            let file_data = e.target.result;
+
+            let encrypted = CryptoJS.AES.encrypt(file_data, password).toString();
+
+            let _tp = file.type;
+            if (_tp === undefined || _tp == null || _tp.length < 1){
+                _tp = "Unknown";
+            }
+
+            let data = {
+                user: user_id,
+                name: file.name,
+                size: file.size,
+                type: _tp,
+                data: encrypted
+            }
+
+            let response = await fetch("/upload", {
+                method: "POST",
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(data)
+            });
+
+
+
+
+            if (response.ok) {
+                const data = await response.json();
+                if (data['success']) {
+                    window.location.reload();
+                } else {
+                    alert(JSON.stringify(data['error']));
+                }
+            } else {
+                alert(response.statusText);
+            }
+
+        };
+        reader.readAsDataURL(file);
+
+
+    }
+
+    let files = [];
+    async function load(){
+
+        let response = await fetch("/files?uid=" + encodeURIComponent(user_id), {
+            method: "GET"
+        });
+
+        if (!response.ok) alert(response.statusText);
+        response = await response.json();
+
+        if (response['success']){
+            files = response['data'];
+            let container = document.getElementById("file-container");
+            container.innerHTML = "";
+
+            for (let i = 0; i < files.length; i++) {
+                let file = files[i];
+                let tr = document.createElement("tr");
+                tr.innerHTML = `
+                <td class="align-middle">${file['name']}</td>
+                <td class="align-middle">${file['type']}</td>
+                <td class="align-middle">${get_size(file['size'])}</td>
+                <td class="align-middle"><button onclick="decrypt(${i})" class="btn btn-outline-dark"><i class="fa fa-download"></i></button></td>
+                    `;
+
+                container.append(tr);
+
+            }
+        }else {
+            alert(JSON.stringify(response['error']));
+        }
+
+    }
+
+    load();
+
+    function decrypt(i) {
+        let file = files[i];
+
+        let key = window.prompt("Please enter password for decryption.","");
+        if (key.length <1){
+            alert("Please enter password to decrypt!");
+            return;
+        }
+
+        let decrypted = CryptoJS.AES.decrypt(file.data, key).toString(CryptoJS.enc.Utf8);
+
+        let a = document.createElement("a");
+        let url = `${decrypted}` ;
+        let filename = file.name;
+        a.href = url;
+        a.download = filename;
+        a.click();
+        window.URL.revokeObjectURL(url);
+    }
+
+
+    function get_size(b) {
+        if (b === undefined || b == null){
+            return "0 B";
+        }
+
+        if (b <= 1023){
+            return b + " B";
+        }
+        b = b/1024;
+        if (b <= 1023){
+            return b.toFixed(2) + " kB";
+        }
+        b = b/1024;
+        if (b <= 1023){
+            return b.toFixed(2) + " MB";
+        }
+        b = b/1024;
+        if (b <= 1023){
+            return b.toFixed(2) + " GB";
+        }
+    }
+</script>
+
+</html>

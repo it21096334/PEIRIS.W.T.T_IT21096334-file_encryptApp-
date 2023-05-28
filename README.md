@@ -1,7 +1,7 @@
 # PEIRIS.W.T.T_IT21096334-file_encryptApp-
 SSS IE3042 PROJECT-FILE ENCRYPTION APP_W.T.T.PEIRIS
 
-***Note: the node_modules folder is not contain in this resporsitary. It can be taken or retrieve by here: https://mysliit-my.sharepoint.com/:f:/g/personal/it21096334_my_sliit_lk/ElYEBIuz8ANDlSrsAUJ1qOIBbNQvdDaxDD9_vI69ZyBPLA?e=nQHZf8 . Or otherwise can install dependencies mentioned in package.json.
+***Note: the node_modules folder is not contain in this resporsitary cause having errors when upload it, therefore I had upload full source code with node_modules folder into my cloud storage and the link is provided here. It can be taken or retrieve by here: https://mysliit-my.sharepoint.com/:f:/g/personal/it21096334_my_sliit_lk/ElYEBIuz8ANDlSrsAUJ1qOIBbNQvdDaxDD9_vI69ZyBPLA?e=nQHZf8 . Or otherwise can install dependencies mentioned in package.json.
 
 
 To run the app run the server and http://localhost:8000/sign_in.html run in browser(google).
